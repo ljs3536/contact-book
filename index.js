@@ -3,6 +3,7 @@
 var express = require('express');
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser'); // body-parser module을 bodyparser 변수에 담는다
+var methodOverride = require('method-override'); //method-override module을 methodOverride 변수에 담는다.
 var app = express();
 
 // DB setting
@@ -35,6 +36,9 @@ app.set('view engine', 'ejs');
 app.use(express.static(__dirname+'/public'));
 app.use(bodyParser.json()); // json형식의 데이터를 받는다는 설정
 app.use(bodyParser.urlencoded({extended:true})); // urlencoded data를 extended 알고리즘을 사용해서 분석한다는 설정
+app.use(methodOverride('_method'));
+// _method의 query로 들어오는 값으로 HTTP method를 바꾼다.
+// 예를 들어 id?_method=delete를 받으면 _method의 값인 delete를 읽어 해당 request의 HTTP method를 delete로 바꾼다.
 
 // DB schema
 // mongoose.Schema 함수로 DB에서 사용할 Schema를 설정한다. 데이터베이스에 정보를 어떠한 형식으로 저장할 지를 지정해주는 부분이다.
@@ -72,9 +76,38 @@ app.get('/contacts/new', function(req, res){
   res.render('contacts/new');
 });
 // Contacts - create
-// "/contacts"에 post 요청이 오는 경우 : "/contacts/new"에서 폼을 전달받는 경우
+// "/contacts"에 post 요청이 오는 경우 : "/contacts/new"에서 폼을 전달받는 경
 app.post('/contacts', function(req, res){
   Contact.create(req.body, function(err, contact){
+    if(err) return res.json(err);
+    res.redirect('/contacts');
+  });
+});
+
+// Contacts - show // 3
+app.get('/contacts/:id', function(req, res){
+  Contact.findOne({_id:req.params.id}, function(err, contact){
+    if(err) return res.json(err);
+    res.render('contacts/show', {contact:contact});
+  });
+});
+// Contacts - edit // 4
+app.get('/contacts/:id/edit', function(req, res){
+  Contact.findOne({_id:req.params.id}, function(err, contact){
+    if(err) return res.json(err);
+    res.render('contacts/edit', {contact:contact});
+  });
+});
+// Contacts - update // 5
+app.put('/contacts/:id', function(req, res){
+  Contact.findOneAndUpdate({_id:req.params.id}, req.body, function(err, contact){
+    if(err) return res.json(err);
+    res.redirect('/contacts/'+req.params.id);
+  });
+});
+// Contacts - destroy // 6
+app.delete('/contacts/:id', function(req, res){
+  Contact.deleteOne({_id:req.params.id}, function(err){
     if(err) return res.json(err);
     res.redirect('/contacts');
   });
